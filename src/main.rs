@@ -144,6 +144,12 @@ fn postfix_binding_power(op: char) -> Option<(u8, ())> {
     Some(res)
 }
 
+// We are using 'binding power' here in place of precedence, if we take the expression
+// a + b * c we can think of the * having more binding power than the + eg.
+// expr: A      +       B       *       C
+// power:   3       3       5       5
+// the * is stronger and has more power than the + so the parsed expression becomes
+// A + (B * C)
 fn infix_binding_power(op: char) -> Option<(u8, u8)> {
     let res = match op {
         '=' => (2, 1),
@@ -156,50 +162,90 @@ fn infix_binding_power(op: char) -> Option<(u8, u8)> {
     Some(res)
 }
 
-#[test]
-fn tests() {
-    let s = expr("1");
-    assert_eq!(s.to_string(), "1");
+#[cfg(test)]
+mod tests {
+    use super::*;
+    #[test]
+    fn test1() {
+        let s = expr("1");
+        assert_eq!(s.to_string(), "1");
+    }
 
-    let s = expr("1 + 2 * 3");
-    assert_eq!(s.to_string(), "(+ 1 (* 2 3))");
+    #[test]
+    fn test2() {
+        let s = expr("1 + 2 * 3");
+        assert_eq!(s.to_string(), "(+ 1 (* 2 3))");
+    }
 
-    let s = expr("a + b * c * d + e");
-    assert_eq!(s.to_string(), "(+ (+ a (* (* b c) d)) e)");
+    #[test]
+    fn test3() {
+        let s = expr("a + b * c * d + e");
+        assert_eq!(s.to_string(), "(+ (+ a (* (* b c) d)) e)");
+    }
 
-    let s = expr("f . g . h");
-    assert_eq!(s.to_string(), "(. f (. g h))");
+    #[test]
+    fn test4() {
+        let s = expr("f . g . h");
+        assert_eq!(s.to_string(), "(. f (. g h))");
+    }
 
-    let s = expr("1 + 2 + f . g . h * 3 * 4");
-    assert_eq!(s.to_string(), "(+ (+ 1 2) (* (* (. f (. g h)) 3) 4))");
+    #[test]
+    fn test5() {
+        let s = expr("1 + 2 + f . g . h * 3 * 4");
+        assert_eq!(s.to_string(), "(+ (+ 1 2) (* (* (. f (. g h)) 3) 4))");
+    }
 
-    let s = expr("--1 * 2");
-    assert_eq!(s.to_string(), "(* (- (- 1)) 2)");
+    #[test]
+    fn test6() {
+        let s = expr("--1 * 2");
+        assert_eq!(s.to_string(), "(* (- (- 1)) 2)");
+    }
 
-    let s = expr("--f . g");
-    assert_eq!(s.to_string(), "(- (- (. f g)))");
+    #[test]
+    fn test7() {
+        let s = expr("--f . g");
+        assert_eq!(s.to_string(), "(- (- (. f g)))");
+    }
 
-    let s = expr("-9!");
-    assert_eq!(s.to_string(), "(- (! 9))");
+    #[test]
+    fn test8() {
+        let s = expr("-9!");
+        assert_eq!(s.to_string(), "(- (! 9))");
+    }
 
-    let s = expr("f . g !");
-    assert_eq!(s.to_string(), "(! (. f g))");
+    #[test]
+    fn test9() {
+        let s = expr("f . g !");
+        assert_eq!(s.to_string(), "(! (. f g))");
+    }
 
-    let s = expr("(((0)))");
-    assert_eq!(s.to_string(), "0");
+    #[test]
+    fn test10() {
+        let s = expr("(((0)))");
+        assert_eq!(s.to_string(), "0");
+    }
 
-    let s = expr("x[0][1]");
-    assert_eq!(s.to_string(), "([ ([ x 0) 1)");
+    #[test]
+    fn test11() {
+        let s = expr("x[0][1]");
+        assert_eq!(s.to_string(), "([ ([ x 0) 1)");
+    }
 
-    let s = expr(
-        "a ? b :
-         c ? d
-         : e",
-    );
-    assert_eq!(s.to_string(), "(? a b (? c d e))");
+    #[test]
+    fn test12() {
+        let s = expr(
+            "a ? b :
+             c ? d
+             : e",
+        );
+        assert_eq!(s.to_string(), "(? a b (? c d e))");
+    }
 
-    let s = expr("a = 0 ? b : c = d");
-    assert_eq!(s.to_string(), "(= a (= (? 0 b c) d))")
+    #[test]
+    fn test13() {
+        let s = expr("a = 0 ? b : c = d");
+        assert_eq!(s.to_string(), "(= a (= (? 0 b c) d))")
+    }
 }
 
 fn main() {
